@@ -1,0 +1,27 @@
+name: FAQ Issue Notification
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord-Thread erstellen
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_FAQ_WEBHOOK_URL }}
+        run: |
+          TITLE="${{ github.event.issue.title }}"
+          BODY="${{ github.event.issue.body }}"
+          URL="${{ github.event.issue.html_url }}"
+          AUTHOR="${{ github.event.issue.user.login }}"
+          jq -n \
+            --arg t "$TITLE" \
+            --arg b "$BODY" \
+            --arg u "$URL" \
+            --arg a "$AUTHOR" \
+            '{thread_name: $t, embeds: [{title: $t, description: $b, url: $u, color: 5814783, footer: {text: ("Gefragt von " + $a)}}]}' \
+          | curl -X POST "$DISCORD_WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d @-
